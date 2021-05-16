@@ -4,4 +4,6 @@ bin
 include
 lib
 pyvenv.cfg
-web/data/*
+*.png
+*.json
+web/data/source/*.tiff
