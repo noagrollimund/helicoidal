@@ -174,7 +174,7 @@ def auto(df):
 # 1) Choisir le fichier .csv à exploiter
 FileName = "verre_eau_statique_angle.csv"
 
-df  = pd.read_csv(FileName, delimiter = ",")
+df  = pd.read_csv(FileName, sep = ",")
 
 # 2) Étape non obligatoire : définir les paramètres à fixer
 # sous la forme " fix_parameters = {'paramètre1':valeur1, 'paramètre2':valeur2, ...} "

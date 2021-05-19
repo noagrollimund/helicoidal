@@ -12,6 +12,14 @@ def is_valid(image_path):
     json_dict = get_json_dict(image_path)
     return json_dict["valid"]
 
+def refresh_output_images():
+    list_images_paths = os.listdir(os.path.join(folder, input_folder))
+    for image_path in list_images_paths:
+        if image_path[-4:] == ".png" :
+            trace_tube(os.path.join("web", "data", output_folder, image_path))
+
+refresh_output_images()
+
 eel.init('web', allowed_extensions=['.js', '.html'])
 
 @eel.expose
