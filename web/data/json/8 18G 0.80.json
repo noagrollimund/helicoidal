@@ -1,28 +1,29 @@
 {
     "name": "web/data/input/8 18G 0.80.png",
-    "valid": false,
+    "valid": true,
     "ruler": [
         {
-            "x": -1,
-            "y": -1
+            "x": 935,
+            "y": 812
         },
         {
-            "x": -1,
-            "y": -1
+            "x": 945,
+            "y": 23
         }
     ],
-    "ruler_value": 1,
+    "ruler_value": "11",
     "tube": {
         "x1": 746,
         "x2": 803,
         "matches": []
     },
     "water": [
-        28,
         265,
         496,
         633,
-        827,
-        1087
+        361,
+        177,
+        829,
+        1095
     ]
 }
