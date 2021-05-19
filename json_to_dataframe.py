@@ -55,7 +55,7 @@ def get_water_list(json_dict, cylinder):
         real_ruler_distance = float(json_dict["ruler_value"])
     water_distance_in_px = sorted(json_dict["water"])
     real_water_distance = [(water - water_distance_in_px[0]) * real_ruler_distance / ruler_distance_in_px for water in water_distance_in_px]
-    return [real_water_distance]
+    return real_water_distance
         
 
 
