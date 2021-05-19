@@ -1,0 +1,23 @@
+{
+    "name": "web/data/input/10 22G 2.50.png",
+    "valid": false,
+    "ruler": [
+        {
+            "x": -1,
+            "y": -1
+        },
+        {
+            "x": -1,
+            "y": -1
+        }
+    ],
+    "ruler_value": 1,
+    "tube": {
+        "x1": 1166,
+        "x2": 1371,
+        "matches": []
+    },
+    "water": [
+        800
+    ]
+}
