@@ -227,6 +227,7 @@ def linear_regression(x,y):
     print('slope:', slope)
     return slope, intercept
 
+
 ## Catalogue
 # Fichiers :
 #               Nom                                     Paramètres disponibles
@@ -257,30 +258,31 @@ def linear_regression(x,y):
 # 'v_on_orth'       vitesse d'accrochage projetée de manière orthoradiale
 
 
-### Réglages et exécution en mode manuel
-# 1) Choisir le fichier .csv à exploiter
-FileName = "lambda.csv"
+if __name__ == "__main__" : 
+    ### Réglages et exécution en mode manuel
+    # 1) Choisir le fichier .csv à exploiter
+    FileName = "lambdas.csv"
 
-df  = pd.read_csv(FileName, sep = ",")
+    df  = pd.read_csv(FileName, sep = ",")
 
-# 2) Étape non obligatoire : définir les paramètres à fixer
-# sous la forme " fix_parameters = {'paramètre1':valeur1, 'paramètre2':valeur2, ...} "
-fix_parameters = {'Angle':33.5} # Ex : 'Dc':8, 'Dj':0.61
+    # 2) Étape non obligatoire : définir les paramètres à fixer
+    # sous la forme " fix_parameters = {'paramètre1':valeur1, 'paramètre2':valeur2, ...} "
+    fix_parameters = {'Angle':33.5} # Ex : 'Dc':8, 'Dj':0.61
 
-# 3) Définir quelles grandeurs tracer en fonction de quel paramètre.
-# Note : Si on ne veut tracer qu'une seule grandeur, mettre deux fois la même.
-paramètre = 'RQ'
-grandeur1 = 'lambda'
-grandeur2 = 'lambda'
+    # 3) Définir quelles grandeurs tracer en fonction de quel paramètre.
+    # Note : Si on ne veut tracer qu'une seule grandeur, mettre deux fois la même.
+    paramètre = 'RQ'
+    grandeur1 = 'lambda'
+    grandeur2 = 'lambda'
 
-# trace(df, paramètre, grandeur1, grandeur2, fix_parameters)
-lambdas(df, paramètre, grandeur1, fix_parameters)
+    # trace(df, paramètre, grandeur1, grandeur2, fix_parameters)
+    lambdas(df, paramètre, grandeur1, fix_parameters)
 
-# 4) Exécuter le programme
+    # 4) Exécuter le programme
 
 
-### Mode automatique : on précise juste le nom du fichier et on laisse
-# la fonction auto(df) s'occuper de tout avec des paramètres par défaut :)
-# /!\ auto n'est pas conçu pour fonctionner avec lambdas
+    ### Mode automatique : on précise juste le nom du fichier et on laisse
+    # la fonction auto(df) s'occuper de tout avec des paramètres par défaut :)
+    # /!\ auto n'est pas conçu pour fonctionner avec lambdas
 
-# auto(df)
+    # auto(df)
