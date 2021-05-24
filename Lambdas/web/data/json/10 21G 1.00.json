@@ -1,0 +1,25 @@
+{
+    "name": "web/data/input/10 21G 1.00.png",
+    "valid": true,
+    "ruler": [
+        {
+            "x": 1378,
+            "y": 805
+        },
+        {
+            "x": 1365,
+            "y": 30
+        }
+    ],
+    "ruler_value": "7",
+    "tube": {
+        "x1": 1068,
+        "x2": 1177,
+        "matches": []
+    },
+    "water": [
+        259,
+        529,
+        61
+    ]
+}

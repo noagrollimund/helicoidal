@@ -1,6 +1,7 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
+from sklearn.linear_model import LinearRegression
 
 def process_df(df, parameter1, parameter2, parameter3, fix_parameters):
     """Extrait les colonnes d'intérêt sous forme de listes, à partir du dataframe, des paramètres fixes et variables"""
@@ -15,18 +16,17 @@ def process_df(df, parameter1, parameter2, parameter3, fix_parameters):
 
 def rule_tip(tip):
     """Associe à chaque couleur d'embout son diamètre"""
-    Dj = 0
     tip_diameters = {'P':0.51, 'R':0.61, 'V':0.84, 'N':1.2, 'O':1.54}
     if tip in tip_diameters.keys():
         Dj = tip_diameters[tip]
+        return Dj
     else:
         print('\n Attention : embout inconnu dans le dataframe ! \n')
         return None
-    return Dj
 
 def compute(df, compute_choice):
     """Calcule les grandeurs d'intérêt choisies dans compute_choice"""
-    catalogue = ['Dj', 'R', 'v_on', 'v_off', 'v_lim', 'InvSinAngle', 'f_lim', 'v_orth_lim','v_on_orth', 'v_off_orth']
+    catalogue = ['Dj', 'R', 'v_on', 'v_off', 'v_lim', 'InvSinAngle', 'f_lim', 'v_orth_lim','v_on_orth', 'v_off_orth', 'v', 'RQ']
     for choice in compute_choice:
         if choice not in catalogue:
             print('\n Attention : ' + choice + ' est à calculer, mais elle ne fait pas partie du catalogue !\n')
@@ -51,16 +51,19 @@ def compute(df, compute_choice):
         df['v_on_orth'] = 4*df['Q_on']/(np.pi*df['Dj']**2)*np.sin(df['Angle']*np.pi/180)
     if 'v_off_orth' in compute_choice and 'Q_on' in df.columns:
         df['v_off_orth'] = 4*df['Q_off']/(np.pi*df['Dj']**2)*np.sin(df['Angle']*np.pi/180)
-    print('\n Grandeurs calculées : ' + str(compute_choice) + '\n')
+    if 'v' in compute_choice and 'Q' in df.columns:
+        df['v'] = 4*df['Q']/(np.pi*df['Dj']**2)
+    if 'RQ' in compute_choice:
+        df['RQ'] = df['Dc']/df['Dj']*df['Q']
     return df
 
 def labelling(parameter):
     """Donne des jolies étiquettes aux courbes"""
     label = parameter
     labels = {}
-    labels['Dc'] = "Diamètre du cylindre Dc (mm)"
-    labels['Dj'] = "Diamètre du jet Dj (mm)"
-    labels['R'] = "Rapport Dc/Dj"
+    labels['Dc'] = "Diamètre du cylindre $D_c$ (mm)"
+    labels['Dj'] = "Diamètre du jet $D_j$ (mm)"
+    labels['R'] = "Rapport $D_c/D_j$"
     labels['Q_on'] = "Débit d'accrochage (mL/s)"
     labels['Q_off'] = "Débit de décrochage (mL/s)"
     labels['v_on'] = "Vitesse d'accrochage (m/s)"
@@ -73,6 +76,9 @@ def labelling(parameter):
     labels['v_orth_lim'] = "Vitesse orthoradiale limite (m/s)"
     labels['v_on_orth'] = "Vitesse orthoradiale d'accrochage (m/s)"
     labels['v_off_orth'] = "Vitesse orthoradiale de décrochage (m/s)"
+    labels['Q'] = "Débit du jet $Q$ (mL/s)"
+    labels['v'] = "Vitesse du jet $v$ (m/s)"
+    labels['RQ'] = "$Q D_c/D_j$ (mL/s)"
     if parameter in labels:
         label = labels[parameter]
     return label
@@ -85,19 +91,16 @@ def give_title(fix_parameters):
     """Donne un titre au graphe en fonction du ou des paramètre(s) fixés"""
     title = ''
     words = FileName[:-4].split("_")
-    if len(words) > 1:
-        for word in words:
-            if word == 'verre' or word == 'plastique':
-                title += 'Cylindre de ' + word
-            if word in ['eau', 'eausavonneuse', 'statique']:
-                if word == 'eausavonneuse':
-                    title +=  ', eau savonneuse'
-                else:
-                    title += ', ' + word
-        for item in list(fix_parameters.keys()):
-            title += ', ' + str(item) + ' = ' + str(fix_parameters[item])
-    else:
-        title = FileName
+    for word in words:
+        if word == 'verre' or word == 'plastique':
+            title += 'Cylindre de ' + word
+        if word in ['eau', 'eausavonneuse', 'statique']:
+            if word == 'eausavonneuse':
+                title +=  ', eau savonneuse'
+            else:
+                title += ', ' + word
+    for item in list(fix_parameters.keys()):
+        title += ', ' + str(item) + ' = ' + str(fix_parameters[item])
     return title
 
 def trace(df, parameter, value1, value2, fix_parameters):
@@ -139,6 +142,90 @@ def auto(df):
         value2 = 'v_on_orth'
     trace(df, parameter, value1, value2, fix_parameters)
 
+def lambdas(df, parameter, value, fix_parameters):
+    """Trace les lambdas en fonction de 'parameter', 
+    en fixant les paramètres mis dans 'fix_parameters'"""
+    parameters = [parameter, value] + list(fix_parameters.keys())
+    compute_choice = [parameter for parameter in parameters if parameter not in df.columns]
+    df = compute(df, compute_choice)
+
+    sub_df = df
+    for key in fix_parameters.keys():
+        if key!=parameter:
+            sub_df = sub_df[sub_df[key] == fix_parameters[key]]
+    sub_df["lambda"] = sub_df["lambda"].apply(eval)
+    x, y = list(sub_df[parameter]), list(sub_df['lambda'])
+
+    lambda1 = []
+    lambda2 = []
+    lambda3 = []
+    lambda4 = []
+    lambda5 = []
+    lambda6 = []
+    for item in y:
+        lambda1.append(item[1])
+        lambda2.append(item[2])
+        if len(item) > 3:
+            lambda3.append(item[3])
+        else:
+            lambda3.append(None)
+        if len(item) > 4:
+            lambda4.append(item[4])
+        else:
+            lambda4.append(None)
+        if len(item) > 5:
+            lambda5.append(item[5])
+        else:
+            lambda5.append(None)
+        if len(item) > 6:
+            lambda6.append(item[6])
+        else:
+            lambda6.append(None)
+        
+    # z = np.linspace(min(x), max(x))
+    # slope1, intercept1 = linear_regression(x,lambda1)
+    # reglin1 = z*slope1 + intercept1
+    # slope2, intercept2 = linear_regression(x,lambda2)
+    # reglin2 = z*slope2 + intercept2
+    # slope3, intercept3 = linear_regression(x,lambda3)
+    # reglin3 = z*slope3 + intercept3
+    # slope4, intercept4 = linear_regression(x,lambda4)
+    # reglin4 = z*slope4 + intercept4
+    
+
+    plt.plot(x, lambda1, '.', label = '$\lambda_1$')
+    plt.plot(x, lambda2, '.', label = '$\lambda_2$')
+    plt.plot(x, lambda3, '.', label = '$\lambda_3$')
+    plt.plot(x, lambda4, '.', label = '$\lambda_4$')
+    # plt.plot(x, lambda5, '.', label = '$\lambda_5$')
+    # plt.plot(x, lambda6, '.', label = '$\lambda_6$')
+    # plt.plot(z, reglin1)
+    # plt.plot(z, reglin2)
+    # plt.plot(z, reglin3)
+    # plt.plot(z, reglin4)
+    plt.xlabel(labelling(parameter))
+    plt.ylabel("Distance selon l'axe z (cm)")
+    plt.legend(loc='upper left', ncol=4)
+    plt.title("Évolution du pas de l'hélice"+give_title(fix_parameters))
+    plt.show()
+    print(df)
+
+def linear_regression(x,y):
+    Y = []
+    X = []
+    for i in range(len(y)):
+        if y[i] != None:
+            Y.append(y[i])
+            X.append(x[i])
+    X = np.array(X).reshape((-1, 1))
+    model = LinearRegression().fit(X, Y)
+    slope = model.coef_
+    intercept = model.intercept_
+    r_sq = model.score(X, Y)
+    print('coefficient of determination:', r_sq)
+    print('intercept:', intercept)
+    print('slope:', slope)
+    return slope, intercept
 
 ## Catalogue
 # Fichiers :
@@ -172,26 +259,28 @@ def auto(df):
 
 ### Réglages et exécution en mode manuel
 # 1) Choisir le fichier .csv à exploiter
-FileName = "verre_eau_statique_angle.csv"
+FileName = "lambdas.csv"
 
 df  = pd.read_csv(FileName, sep = ",")
 
 # 2) Étape non obligatoire : définir les paramètres à fixer
 # sous la forme " fix_parameters = {'paramètre1':valeur1, 'paramètre2':valeur2, ...} "
-fix_parameters = {}
+fix_parameters = {'Angle':33.5} # Ex : 'Dc':8, 'Dj':0.61
 
 # 3) Définir quelles grandeurs tracer en fonction de quel paramètre.
 # Note : Si on ne veut tracer qu'une seule grandeur, mettre deux fois la même.
-paramètre = 'R'
-grandeur1 = 'v_on_orth'
-grandeur2 = 'v_off_orth'
+paramètre = 'RQ'
+grandeur1 = 'lambda'
+grandeur2 = 'lambda'
 
-trace(df, paramètre, grandeur1, grandeur2, fix_parameters)
+# trace(df, paramètre, grandeur1, grandeur2, fix_parameters)
+lambdas(df, paramètre, grandeur1, fix_parameters)
 
 # 4) Exécuter le programme
 
 
 ### Mode automatique : on précise juste le nom du fichier et on laisse
 # la fonction auto(df) s'occuper de tout avec des paramètres par défaut :)
+# /!\ auto n'est pas conçu pour fonctionner avec lambdas
 
 # auto(df)
