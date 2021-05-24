@@ -259,7 +259,7 @@ def linear_regression(x,y):
 
 ### Réglages et exécution en mode manuel
 # 1) Choisir le fichier .csv à exploiter
-FileName = "lambdas.csv"
+FileName = "lambda.csv"
 
 df  = pd.read_csv(FileName, sep = ",")
 
