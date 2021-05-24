@@ -6,4 +6,6 @@ include
 lib
 pyvenv.cfg
 *.png
+*.csv
+*.json
 web/data/source/*.tiff
