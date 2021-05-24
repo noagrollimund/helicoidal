@@ -11,7 +11,7 @@ from folders import *
 
 def first_analysis_all_tubes():
     # Convert all files in source from tiff to png and saving them in the input file
-    for image_path in get_list_images_path(os.path.join(folder, source_folder), ".tiff"):
+    for image_path in get_list_images_path(os.path.join(source_folder), ".tiff"):
         image = cv2.imread(os.path.join(image_path), cv2.IMREAD_GRAYSCALE)
         file_name = image_path.split("/")[-1].split(".tiff")[0]  
         input_path = os.path.join(folder, input_folder, file_name + ".png")
