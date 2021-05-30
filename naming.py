@@ -1,3 +1,19 @@
+def tip_to_diameter(tip_or_diam):
+    """Associe à chaque couleur d'embout son diamètre et inversement"""
+    tip_diameters = {'P':0.51, 'R':0.61, 'V':0.84, 'N':1.2, 'O':1.54}
+    if type(tip_or_diam) == str:
+        if tip_or_diam in tip_diameters.keys():
+            Dj = tip_diameters[tip_or_diam]
+            return Dj
+        else:
+            print('\n /!\ : embout inconnu dans le dataframe ! \n')
+    elif type(tip_or_diam) == float:
+        for key, value in tip_diameters.items():
+            if tip_or_diam == value:
+                return key
+        print("\n /!\ : diamètre d'embout inconnu dans le dataframe ! \n")
+    return None
+
 def labelling(parameter):
     """Donne des étiquettes aux courbes"""
     label = parameter

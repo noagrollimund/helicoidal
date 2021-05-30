@@ -20,25 +20,17 @@ def process_df(df, parameter1, parameter2, parameter3, fix_parameters):
     else:
         return list(sub_df[parameter1]), list(sub_df[parameter2]), list(sub_df[parameter3])
 
-def rule_tip(tip):
-    """Associe à chaque couleur d'embout son diamètre"""
-    tip_diameters = {'P':0.51, 'R':0.61, 'V':0.84, 'N':1.2, 'O':1.54}
-    if tip in tip_diameters.keys():
-        Dj = tip_diameters[tip]
-        return Dj
-    else:
-        print('\n /!\ : embout inconnu dans le dataframe ! \n')
-        return None
-
 def compute(df, compute_choice):
     """Calcule les grandeurs d'intérêt choisies dans compute_choice"""
-    catalogue = ['Dj', 'R', 'v_on', 'v_off', 'v_lim', 'InvSinAngle', 'f_lim', 'v_orth_lim','v_on_orth', 'v_off_orth', 'v', 'RQ', 'QR']
+    catalogue = ['Dj', 'Embout', 'R', 'v_on', 'v_off', 'v_lim', 'InvSinAngle', 'f_lim', 'v_orth_lim','v_on_orth', 'v_off_orth', 'v', 'RQ', 'QR']
     for choice in compute_choice:
         if choice not in catalogue:
             print('\n /!\ : ' + choice + ' est à calculer, mais cette grandeur ne fait pas partie du catalogue !\n')
             return None
     if 'Embout' in df.columns:
-        df['Dj'] = df.apply((lambda x: rule_tip(x['Embout'])), axis=1)
+        df['Dj'] = df.apply((lambda x: naming.tip_to_diameter(x['Embout'])), axis=1)
+    if 'Embout' in compute_choice:
+        df['Embout'] = df.apply((lambda x: naming.tip_to_diameter(x['Dj'])), axis=1)
     if 'R' in compute_choice:
         df['R'] = df['Dc']/df['Dj']
     if 'v_on' in compute_choice and 'Q_on' in df.columns:
@@ -181,14 +173,14 @@ if __name__ == "__main__" :
 
     # 2) Étape facultative : définir les paramètres à fixer
     # sous la forme "fix_parameters = {'paramètre1':valeur1, 'paramètre2':valeur2, ...}"
-    fix_parameters = {'Angle':33.5} # Exemple : fix_parameters = {'Angle':33.5, 'Dc':8, 'Dj':0.61}
+    fix_parameters = {'Angle':33.5, 'Embout': 'N'} # Exemple : fix_parameters = {'Angle':33.5, 'Dc':8, 'Embout':'N'}
 
     # 3) Définir quelles grandeurs tracer en fonction de quel paramètre.
     # Notes :   - Pour les lambdas, la grandeur est forcément 'lambda' et n'a pas besoin d'être définie.
     #           - Si on ne veut tracer qu'une seule grandeur, mettre deux fois la même.
     paramètre = 'RQ'
-    grandeur1 = ''
-    grandeur2 = ''
+    grandeur1 = 'v_on'
+    grandeur2 = 'v_off'
 
     # 4) Pour 'lambdas.csv' seulement : préciser le nombre n de longueurs d'onde à tracer et si on veut une régression linéaire.
     n = 4
@@ -228,7 +220,7 @@ Paramètres :
 Il s'agit de l'ensembles des paramètres contenus dans les fichiers CSV et des paramètres calculés.
 'Dc'              diamètre du cylindre en mm, parmi : 4, 6, 8, 10 en verre, 5, 8, 10 en plastique
 'Embout'          type d'embout, parmi : 'P' (violet), 'R' (rose), 'V' (vert), 'N' (noir), 'O' (olive)
-'Dj'              diamètre du jet. "rule_tip" s'occupe de faire la correspondance avec 'Embout' automatiquement
+'Dj'              diamètre du jet. "tip_to_diameter" s'occupe de faire la correspondance avec 'Embout' automatiquement.
 'R'               rapport Dc/Dj
 'Q_on', 'Q_off'   débits d'accrochage et de décrochage en mL/s
 'v_on', 'v_off'   vitesses d'accrochage et de décrochage en m/s
