@@ -6,13 +6,18 @@ from sklearn.linear_model import LinearRegression
 def process_df(df, parameter1, parameter2, parameter3, fix_parameters):
     """Extrait les colonnes d'intérêt sous forme de listes, à partir du dataframe, des paramètres fixes et variables"""
     if parameter1 not in df.columns or parameter2 not in df.columns or parameter3 not in df.columns:
-        print("\n Attention : un des paramètres (" + parameter1 + ', ' + parameter2 + ', ' + parameter3 + ") n'est pas dans le dataframe \n")
+        print("\n /!\ : un des paramètres (" + parameter1 + ', ' + parameter2 + ', ' + parameter3 + ") n'est pas dans le dataframe ! \n")
         return None
     sub_df = df
     for key in fix_parameters.keys():
         if key not in [parameter1, parameter2, parameter3]:
             sub_df = sub_df[sub_df[key] == fix_parameters[key]]
-    return list(sub_df[parameter1]), list(sub_df[parameter2]), list(sub_df[parameter3])
+    if 'lambda' == parameter2:
+        sub_df['lambda'] = sub_df['lambda'].apply(eval)
+    if parameter2 == parameter3:
+        return list(sub_df[parameter1]), list(sub_df[parameter2])
+    else:
+        return list(sub_df[parameter1]), list(sub_df[parameter2]), list(sub_df[parameter3])
 
 def rule_tip(tip):
     """Associe à chaque couleur d'embout son diamètre"""
@@ -21,15 +26,15 @@ def rule_tip(tip):
         Dj = tip_diameters[tip]
         return Dj
     else:
-        print('\n Attention : embout inconnu dans le dataframe ! \n')
+        print('\n /!\ : embout inconnu dans le dataframe ! \n')
         return None
 
 def compute(df, compute_choice):
     """Calcule les grandeurs d'intérêt choisies dans compute_choice"""
-    catalogue = ['Dj', 'R', 'v_on', 'v_off', 'v_lim', 'InvSinAngle', 'f_lim', 'v_orth_lim','v_on_orth', 'v_off_orth', 'v', 'RQ']
+    catalogue = ['Dj', 'R', 'v_on', 'v_off', 'v_lim', 'InvSinAngle', 'f_lim', 'v_orth_lim','v_on_orth', 'v_off_orth', 'v', 'RQ', 'QR']
     for choice in compute_choice:
         if choice not in catalogue:
-            print('\n Attention : ' + choice + ' est à calculer, mais elle ne fait pas partie du catalogue !\n')
+            print('\n /!\ : ' + choice + ' est à calculer, mais cette grandeur ne fait pas partie du catalogue !\n')
             return None
     if 'Embout' in df.columns:
         df['Dj'] = df.apply((lambda x: rule_tip(x['Embout'])), axis=1)
@@ -55,6 +60,8 @@ def compute(df, compute_choice):
         df['v'] = 4*df['Q']/(np.pi*df['Dj']**2)
     if 'RQ' in compute_choice:
         df['RQ'] = df['Dc']/df['Dj']*df['Q']
+    if 'QR' in compute_choice:
+        df['QR'] = df['Dc']/df['Dj']*df['Q']
     return df
 
 def labelling(parameter):
@@ -79,6 +86,7 @@ def labelling(parameter):
     labels['Q'] = "Débit du jet $Q$ (mL/s)"
     labels['v'] = "Vitesse du jet $v$ (m/s)"
     labels['RQ'] = "$Q D_c/D_j$ (mL/s)"
+    labels['QR'] = "$Q D_c/D_j$ (mL/s)"
     if parameter in labels:
         label = labels[parameter]
     return label
@@ -103,15 +111,20 @@ def give_title(fix_parameters):
         title += ', ' + str(item) + ' = ' + str(fix_parameters[item])
     return title
 
-def trace(df, parameter, value1, value2, fix_parameters):
+def coiling(df, parameter, value1, value2, fix_parameters):
     """Trace 2 grandeurs en fonction du paramètre chosisi"""
+    if parameter == '' or value1 == '' or value2 == '':
+        print("\n /!\ : Un paramètre ou une grandeur n'a pas été choisi ! \n")
+        return None
     parameters = [parameter, value1, value2] + list(fix_parameters.keys())
     compute_choice = [parameter for parameter in parameters if parameter not in df.columns]
     df = compute(df, compute_choice)
-
-    x, y1, y2 = process_df(df, parameter, value1, value2, fix_parameters)
+    if value1 == value2:
+        x, y1 = process_df(df, parameter, value1, value2, fix_parameters)
+    else:
+        x, y1, y2 = process_df(df, parameter, value1, value2, fix_parameters)
+        y2 = zeros_exterminator(y2)
     y1 = zeros_exterminator(y1)
-    y2 = zeros_exterminator(y2)
 
     plt.plot(x, y1, '.', label = labelling(value1))
     if value2 != value1:
@@ -120,115 +133,128 @@ def trace(df, parameter, value1, value2, fix_parameters):
     plt.legend()
     plt.title(give_title(fix_parameters))
     plt.show()
-    print(df)
-
-def auto(df):
-    """S'occupe de tout, avec des paramètres par défaut"""
-    parameter = 'R'
-    value1 = 'v_on'
-    value2 = 'v_off'
-    if FileName == 'angle.csv':
-        parameter = 'Angle'
-    if FileName == 'moteur.csv':
-        parameter = 'U'
-        value1 = 'f_mes'
-        value2 = 'f_mes'
-    if FileName == 'rotationdestruction.csv':
-        parameter = 'v_on'
-        value1 = 'v_orth_lim'
-        value2 = 'v_orth_lim'
-    if FileName == 'verre_eau_statique_angle.csv':
-        value1 = 'v_off_orth'
-        value2 = 'v_on_orth'
-    trace(df, parameter, value1, value2, fix_parameters)
-
-def lambdas(df, parameter, value, fix_parameters):
-    """Trace les lambdas en fonction de 'parameter', 
-    en fixant les paramètres mis dans 'fix_parameters'"""
-    parameters = [parameter, value] + list(fix_parameters.keys())
-    compute_choice = [parameter for parameter in parameters if parameter not in df.columns]
-    df = compute(df, compute_choice)
-
-    sub_df = df
-    for key in fix_parameters.keys():
-        if key!=parameter:
-            sub_df = sub_df[sub_df[key] == fix_parameters[key]]
-    sub_df["lambda"] = sub_df["lambda"].apply(eval)
-    x, y = list(sub_df[parameter]), list(sub_df['lambda'])
-
-    lambda1 = []
-    lambda2 = []
-    lambda3 = []
-    lambda4 = []
-    lambda5 = []
-    lambda6 = []
-    for item in y:
-        lambda1.append(item[1])
-        lambda2.append(item[2])
-        if len(item) > 3:
-            lambda3.append(item[3])
-        else:
-            lambda3.append(None)
-        if len(item) > 4:
-            lambda4.append(item[4])
-        else:
-            lambda4.append(None)
-        if len(item) > 5:
-            lambda5.append(item[5])
-        else:
-            lambda5.append(None)
-        if len(item) > 6:
-            lambda6.append(item[6])
-        else:
-            lambda6.append(None)
-        
-    # z = np.linspace(min(x), max(x))
-    # slope1, intercept1 = linear_regression(x,lambda1)
-    # reglin1 = z*slope1 + intercept1
-    # slope2, intercept2 = linear_regression(x,lambda2)
-    # reglin2 = z*slope2 + intercept2
-    # slope3, intercept3 = linear_regression(x,lambda3)
-    # reglin3 = z*slope3 + intercept3
-    # slope4, intercept4 = linear_regression(x,lambda4)
-    # reglin4 = z*slope4 + intercept4
-    
-
-    plt.plot(x, lambda1, '.', label = '$\lambda_1$')
-    plt.plot(x, lambda2, '.', label = '$\lambda_2$')
-    plt.plot(x, lambda3, '.', label = '$\lambda_3$')
-    plt.plot(x, lambda4, '.', label = '$\lambda_4$')
-    # plt.plot(x, lambda5, '.', label = '$\lambda_5$')
-    # plt.plot(x, lambda6, '.', label = '$\lambda_6$')
-    # plt.plot(z, reglin1)
-    # plt.plot(z, reglin2)
-    # plt.plot(z, reglin3)
-    # plt.plot(z, reglin4)
-    plt.xlabel(labelling(parameter))
-    plt.ylabel("Distance selon l'axe z (cm)")
-    plt.legend(loc='upper left', ncol=4)
-    plt.title("Évolution du pas de l'hélice"+give_title(fix_parameters))
-    plt.show()
-    print(df)
+    print('\n Dataframe final \n', df)
 
 def linear_regression(x,y):
-    Y = []
-    X = []
+    """Calcule la régression linéaire à partir de la donnée de x et y"""
+    X, Y = [], []
     for i in range(len(y)):
         if y[i] != None:
             Y.append(y[i])
             X.append(x[i])
     X = np.array(X).reshape((-1, 1))
     model = LinearRegression().fit(X, Y)
-    slope = model.coef_
-    intercept = model.intercept_
-    r_sq = model.score(X, Y)
-    print('coefficient of determination:', r_sq)
-    print('intercept:', intercept)
-    print('slope:', slope)
-    return slope, intercept
+    return model.coef_, model.intercept_
+
+def lambda_organizer(y, n):
+    """Réarrange les listes de listes de lambdas"""
+    all_lambdas = [[] for k in range(n)]
+    for item in y:
+        for i in range(n):
+            if len(item) > i+1:
+                all_lambdas[i].append(item[i+1])
+            else:
+                all_lambdas[i].append(None)
+    return all_lambdas
+
+def lambdas(df, parameter, fix_parameters, n, reglin = False):
+    """Trace les lambdas en fonction de 'parameter', en fixant les paramètres mis dans 'fix_parameters'"""
+    if parameter == '':
+        print("\n /!\ : Aucun paramètre n'a été choisi ! \n")
+        return None
+    parameters = [parameter, 'lambda'] + list(fix_parameters.keys())
+    compute_choice = [parameter for parameter in parameters if parameter not in df.columns]
+    df = compute(df, compute_choice)
+    x, y = process_df(df, parameter, 'lambda', 'lambda', fix_parameters)
+    lambdas = lambda_organizer(y, n)
+    
+    lbd_labels = ['$\lambda_1$', '$\lambda_2$', '$\lambda_3$', '$\lambda_4$', '$\lambda_5$', '$\lambda_6$']
+    for i in range(n):
+        plt.plot(x, lambdas[i], '.', label = lbd_labels[i])
+    
+    if reglin:
+        z = np.linspace(min(x), max(x))
+        slopes, intercepts, reglins = [[] for k in range(n)], [[] for k in range(n)], []
+        for i in range(n):
+            slopes[i], intercepts[i] = linear_regression(x, lambdas[i])
+            reglins.append(list(z*slopes[i]+intercepts[i]))
+            plt.plot(z, reglins[i])
+        
+    plt.xlabel(labelling(parameter))
+    plt.ylabel("Distance selon l'axe z (cm)")
+    plt.legend(loc = 'upper left', ncol = 4)
+    plt.title("Évolution du pas de l'hélice" + give_title(fix_parameters))
+    plt.show()
+    print('\n Dataframe final \n', df)
+
+def auto(df):
+    """S'occupe de tout, avec des paramètres par défaut"""
+    if FileName == 'lambdas.csv':
+        lambdas(df, 'RQ', {'Angle':33.5}, 4, True)
+    else:
+        parameter, value1, value2 = 'R', 'v_on', 'v_off'
+        fix_parameters = {}
+        if FileName == 'angle.csv':
+            parameter = 'Angle'
+        if FileName == 'moteur.csv':
+            parameter, value1, value2 = 'U', 'f_mes', 'f_mes'
+        if FileName == 'rotationdestruction.csv':
+            parameter, value1, value2 = 'v_on', 'v_orth_lim', 'v_orth_lim'
+        if FileName == 'verre_eau_statique_angle.csv':
+            value1, value2 = 'v_off_orth', 'v_on_orth'
+        coiling(df, parameter, value1, value2, fix_parameters)
 
 
-## Catalogue
+
+########################################################################################################
+### Partie du code à modifier pour utiliser le programme ###
+# Note : Les fichiers et paramètres disponibles sont listés dans la partie Catalogue, à la fin du code.
+
+if __name__ == "__main__" :
+    ### Mode automatique : activer le mode auto (AutoMode = True) et préciser le nom du fichier.
+    # La fonction auto(df) s'occupe de tout avec des paramètres par défaut !
+    AutoMode = False
+
+    ### OU ###
+
+    ### Mode manuel :
+    # 1) Choisir le fichier .csv à exploiter (changer la valeur de 'FileName')
+    FileName = "lambdas.csv"
+
+    # 2) Étape facultative : définir les paramètres à fixer
+    # sous la forme "fix_parameters = {'paramètre1':valeur1, 'paramètre2':valeur2, ...}"
+    fix_parameters = {'Angle':33.5} # Exemple : fix_parameters = {'Angle':33.5, 'Dc':8, 'Dj':0.61}
+
+    # 3) Définir quelles grandeurs tracer en fonction de quel paramètre.
+    # Notes :   - Pour les lambdas, la grandeur est forcément 'lambda' et n'a pas besoin d'être définie.
+    #           - Si on ne veut tracer qu'une seule grandeur, mettre deux fois la même.
+    paramètre = 'RQ'
+    grandeur1 = ''
+    grandeur2 = ''
+
+    # 4) Pour 'lambdas.csv' seulement : préciser le nombre n de longueurs d'onde à tracer et si on veut une régression linéaire.
+    n = 4
+    reglin = True
+
+    # 5) Exécuter le programme
+#########################################################################################################
+
+
+#########################################################################################################
+    ### Ne pas modifier ###
+    df  = pd.read_csv(FileName, sep = ",")
+    if AutoMode:
+        auto(df)
+    else:
+        if FileName == 'lambdas.csv':
+            lambdas(df, paramètre, fix_parameters, n, reglin)
+        else:
+            coiling(df, paramètre, grandeur1, grandeur2, fix_parameters)
+#########################################################################################################
+
+
+#########################################################################################################
+### Catalogue ###
 # Fichiers :
 #               Nom                                     Paramètres disponibles
 #               "verre_eau_statique.csv"                'Embout', 'Dj, 'Dc', 'R', 'Q_off', 'Q_on', 'v_off', 'v_on'
@@ -238,10 +264,11 @@ def linear_regression(x,y):
 #               "moteur.csv"                            'U', 'f_mes'
 #               "rotationdestruction.csv"               'Embout', 'Dj, 'Dc', 'R', 'Q_on', 'v_on', 'U', 'f_lim', 'v_orth_lim'
 #               "verre_eau_statique_angle.csv"          'Embout', 'Dj, 'Dc', 'R', 'Q_off', 'Q_on', 'v_off', 'v_on', 'v_off_orth', 'v_on_orth'
+#               "lambdas.csv"                           'Angle', 'Dj', 'Dc', 'Q', 'lambda', 'v', 'RQ'
 # Note : '_' est un séparateur d'informations dans le nom des fichiers
 
 # Paramètres :
-# Il s'agit de l'ensembles des paramètres contenus dans le fichier CSV et des paramètres calculés.
+# Il s'agit de l'ensembles des paramètres contenus dans les fichiers CSV et des paramètres calculés.
 # 'Dc'              diamètre du cylindre en mm, parmi : 4, 6, 8, 10 en verre, 5, 8, 10 en plastique
 # 'Embout'          type d'embout, parmi : 'P' (violet), 'R' (rose), 'V' (vert), 'N' (noir), 'O' (olive)
 # 'Dj'              diamètre du jet. "rule_tip" s'occupe de faire la correspondance avec 'Embout' automatiquement
@@ -256,33 +283,6 @@ def linear_regression(x,y):
 # 'v_orth_lim'      vitesse orthoradiale limite d'un point en rotation sur le cylindre en m/s
 # 'v_off_orth'      vitesse de décrochage projetée de manière orthoradiale
 # 'v_on_orth'       vitesse d'accrochage projetée de manière orthoradiale
-
-
-if __name__ == "__main__" : 
-    ### Réglages et exécution en mode manuel
-    # 1) Choisir le fichier .csv à exploiter
-    FileName = "lambdas.csv"
-
-    df  = pd.read_csv(FileName, sep = ",")
-
-    # 2) Étape non obligatoire : définir les paramètres à fixer
-    # sous la forme " fix_parameters = {'paramètre1':valeur1, 'paramètre2':valeur2, ...} "
-    fix_parameters = {'Angle':33.5} # Ex : 'Dc':8, 'Dj':0.61
-
-    # 3) Définir quelles grandeurs tracer en fonction de quel paramètre.
-    # Note : Si on ne veut tracer qu'une seule grandeur, mettre deux fois la même.
-    paramètre = 'RQ'
-    grandeur1 = 'lambda'
-    grandeur2 = 'lambda'
-
-    # trace(df, paramètre, grandeur1, grandeur2, fix_parameters)
-    lambdas(df, paramètre, grandeur1, fix_parameters)
-
-    # 4) Exécuter le programme
-
-
-    ### Mode automatique : on précise juste le nom du fichier et on laisse
-    # la fonction auto(df) s'occuper de tout avec des paramètres par défaut :)
-    # /!\ auto n'est pas conçu pour fonctionner avec lambdas
-
-    # auto(df)
+# 'v'               vitesse du jet (pour les lambdas)
+# 'RQ'              produit du débit par le rapport R (fonctionne aussi si on demande 'QR')
+# 'lambda'          liste des demi-longueurs d'onde successives
