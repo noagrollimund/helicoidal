@@ -2,6 +2,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.linear_model import LinearRegression
+import naming
 
 def process_df(df, parameter1, parameter2, parameter3, fix_parameters):
     """Extrait les colonnes d'intérêt sous forme de listes, à partir du dataframe, des paramètres fixes et variables"""
@@ -64,52 +65,9 @@ def compute(df, compute_choice):
         df['QR'] = df['Dc']/df['Dj']*df['Q']
     return df
 
-def labelling(parameter):
-    """Donne des jolies étiquettes aux courbes"""
-    label = parameter
-    labels = {}
-    labels['Dc'] = "Diamètre du cylindre $D_c$ (mm)"
-    labels['Dj'] = "Diamètre du jet $D_j$ (mm)"
-    labels['R'] = "Rapport $D_c/D_j$"
-    labels['Q_on'] = "Débit d'accrochage (mL/s)"
-    labels['Q_off'] = "Débit de décrochage (mL/s)"
-    labels['v_on'] = "Vitesse d'accrochage (m/s)"
-    labels['v_off'] = "Vitesse de décrochage (m/s)"
-    labels['Angle'] = "Angle entre le jet et le cylindre (°)"
-    labels['InvSinAngle'] = "Inverse du sinus de l'angle entre le jet et le cylindre"
-    labels['U'] = "Tension d'alimentation du moteur (V)"
-    labels['f_mes'] = "Fréquence algébrique de rotation du moteur (Hz)"
-    labels['f_lim'] = "Fréquence limite de rotation (Hz)"
-    labels['v_orth_lim'] = "Vitesse orthoradiale limite (m/s)"
-    labels['v_on_orth'] = "Vitesse orthoradiale d'accrochage (m/s)"
-    labels['v_off_orth'] = "Vitesse orthoradiale de décrochage (m/s)"
-    labels['Q'] = "Débit du jet $Q$ (mL/s)"
-    labels['v'] = "Vitesse du jet $v$ (m/s)"
-    labels['RQ'] = "$Q D_c/D_j$ (mL/s)"
-    labels['QR'] = "$Q D_c/D_j$ (mL/s)"
-    if parameter in labels:
-        label = labels[parameter]
-    return label
-
 def zeros_exterminator(x):
     """Elimine les zéros de la liste x"""
     return [item if abs(item) > 1e-3 else None for item in x]
-
-def give_title(fix_parameters):
-    """Donne un titre au graphe en fonction du ou des paramètre(s) fixés"""
-    title = ''
-    words = FileName[:-4].split("_")
-    for word in words:
-        if word == 'verre' or word == 'plastique':
-            title += 'Cylindre de ' + word
-        if word in ['eau', 'eausavonneuse', 'statique']:
-            if word == 'eausavonneuse':
-                title +=  ', eau savonneuse'
-            else:
-                title += ', ' + word
-    for item in list(fix_parameters.keys()):
-        title += ', ' + str(item) + ' = ' + str(fix_parameters[item])
-    return title
 
 def coiling(df, parameter, value1, value2, fix_parameters):
     """Trace 2 grandeurs en fonction du paramètre chosisi"""
@@ -126,12 +84,12 @@ def coiling(df, parameter, value1, value2, fix_parameters):
         y2 = zeros_exterminator(y2)
     y1 = zeros_exterminator(y1)
 
-    plt.plot(x, y1, '.', label = labelling(value1))
+    plt.plot(x, y1, '.', label = naming.labelling(value1))
     if value2 != value1:
-        plt.plot(x, y2, '.', label = labelling(value2))
-    plt.xlabel(labelling(parameter))
+        plt.plot(x, y2, '.', label = naming.labelling(value2))
+    plt.xlabel(naming.labelling(parameter))
     plt.legend()
-    plt.title(give_title(fix_parameters))
+    plt.title(naming.give_title(FileName, fix_parameters))
     plt.show()
     print('\n Dataframe final \n', df)
 
@@ -180,10 +138,10 @@ def lambdas(df, parameter, fix_parameters, n, reglin = False):
             reglins.append(list(z*slopes[i]+intercepts[i]))
             plt.plot(z, reglins[i])
         
-    plt.xlabel(labelling(parameter))
+    plt.xlabel(naming.labelling(parameter))
     plt.ylabel("Distance selon l'axe z (cm)")
     plt.legend(loc = 'upper left', ncol = 4)
-    plt.title("Évolution du pas de l'hélice" + give_title(fix_parameters))
+    plt.title("Évolution du pas de l'hélice" + naming.give_title(FileName, fix_parameters))
     plt.show()
     print('\n Dataframe final \n', df)
 
@@ -253,36 +211,36 @@ if __name__ == "__main__" :
 #########################################################################################################
 
 
-#########################################################################################################
-### Catalogue ###
-# Fichiers :
-#               Nom                                     Paramètres disponibles
-#               "verre_eau_statique.csv"                'Embout', 'Dj, 'Dc', 'R', 'Q_off', 'Q_on', 'v_off', 'v_on'
-#               "plastique_eau_statique.csv"            'Embout', 'Dj, 'Dc', 'R', 'Q_off', 'Q_on', 'v_off', 'v_on'
-#               "verre_eausavonneuse_statique.csv"      'Embout', 'Dj, 'Dc', 'R', 'Q_off', 'Q_on', 'v_off', 'v_on'
-#               "angle.csv"                             'Embout', 'Dj, 'Dc', 'R', 'Q_off', 'Q_on', 'v_off', 'v_on', 'Angle', 'InvSinAngle'
-#               "moteur.csv"                            'U', 'f_mes'
-#               "rotationdestruction.csv"               'Embout', 'Dj, 'Dc', 'R', 'Q_on', 'v_on', 'U', 'f_lim', 'v_orth_lim'
-#               "verre_eau_statique_angle.csv"          'Embout', 'Dj, 'Dc', 'R', 'Q_off', 'Q_on', 'v_off', 'v_on', 'v_off_orth', 'v_on_orth'
-#               "lambdas.csv"                           'Angle', 'Dj', 'Dc', 'Q', 'lambda', 'v', 'RQ'
-# Note : '_' est un séparateur d'informations dans le nom des fichiers
+""" Catalogue
+Fichiers :
+              Nom                                     Paramètres disponibles
+              "verre_eau_statique.csv"                'Embout', 'Dj, 'Dc', 'R', 'Q_off', 'Q_on', 'v_off', 'v_on'
+              "plastique_eau_statique.csv"            'Embout', 'Dj, 'Dc', 'R', 'Q_off', 'Q_on', 'v_off', 'v_on'
+              "verre_eausavonneuse_statique.csv"      'Embout', 'Dj, 'Dc', 'R', 'Q_off', 'Q_on', 'v_off', 'v_on'
+              "angle.csv"                             'Embout', 'Dj, 'Dc', 'R', 'Q_off', 'Q_on', 'v_off', 'v_on', 'Angle', 'InvSinAngle'
+              "moteur.csv"                            'U', 'f_mes'
+              "rotationdestruction.csv"               'Embout', 'Dj, 'Dc', 'R', 'Q_on', 'v_on', 'U', 'f_lim', 'v_orth_lim'
+              "verre_eau_statique_angle.csv"          'Embout', 'Dj, 'Dc', 'R', 'Q_off', 'Q_on', 'v_off', 'v_on', 'v_off_orth', 'v_on_orth'
+              "lambdas.csv"                           'Angle', 'Dj', 'Dc', 'Q', 'lambda', 'v', 'RQ'
+Note : '_' est un séparateur d'informations dans le nom des fichiers
 
-# Paramètres :
-# Il s'agit de l'ensembles des paramètres contenus dans les fichiers CSV et des paramètres calculés.
-# 'Dc'              diamètre du cylindre en mm, parmi : 4, 6, 8, 10 en verre, 5, 8, 10 en plastique
-# 'Embout'          type d'embout, parmi : 'P' (violet), 'R' (rose), 'V' (vert), 'N' (noir), 'O' (olive)
-# 'Dj'              diamètre du jet. "rule_tip" s'occupe de faire la correspondance avec 'Embout' automatiquement
-# 'R'               rapport Dc/Dj
-# 'Q_on', 'Q_off'   débits d'accrochage et de décrochage en mL/s
-# 'v_on', 'v_off'   vitesses d'accrochage et de décrochage en m/s
-# 'Angle'           angle en degrés entre le jet et le cylindre
-# 'InvSinAngle'     inverse du sinus de l'angle entre le jet et le cylindre
-# 'U'               tension en volt aux bornes du moteur
-# 'f_mes'           fréquence de rotation du moteur mesurée pour étalonnage
-# 'f_lim'           fréquence de rotation du moteur calculée à partir de sa tension d'alimentation
-# 'v_orth_lim'      vitesse orthoradiale limite d'un point en rotation sur le cylindre en m/s
-# 'v_off_orth'      vitesse de décrochage projetée de manière orthoradiale
-# 'v_on_orth'       vitesse d'accrochage projetée de manière orthoradiale
-# 'v'               vitesse du jet (pour les lambdas)
-# 'RQ'              produit du débit par le rapport R (fonctionne aussi si on demande 'QR')
-# 'lambda'          liste des demi-longueurs d'onde successives
+Paramètres :
+Il s'agit de l'ensembles des paramètres contenus dans les fichiers CSV et des paramètres calculés.
+'Dc'              diamètre du cylindre en mm, parmi : 4, 6, 8, 10 en verre, 5, 8, 10 en plastique
+'Embout'          type d'embout, parmi : 'P' (violet), 'R' (rose), 'V' (vert), 'N' (noir), 'O' (olive)
+'Dj'              diamètre du jet. "rule_tip" s'occupe de faire la correspondance avec 'Embout' automatiquement
+'R'               rapport Dc/Dj
+'Q_on', 'Q_off'   débits d'accrochage et de décrochage en mL/s
+'v_on', 'v_off'   vitesses d'accrochage et de décrochage en m/s
+'Angle'           angle en degrés entre le jet et le cylindre
+'InvSinAngle'     inverse du sinus de l'angle entre le jet et le cylindre
+'U'               tension en volt aux bornes du moteur
+'f_mes'           fréquence de rotation du moteur mesurée pour étalonnage
+'f_lim'           fréquence de rotation du moteur calculée à partir de sa tension d'alimentation
+'v_orth_lim'      vitesse orthoradiale limite d'un point en rotation sur le cylindre en m/s
+'v_off_orth'      vitesse de décrochage projetée de manière orthoradiale
+'v_on_orth'       vitesse d'accrochage projetée de manière orthoradiale
+'v'               vitesse du jet (pour les lambdas)
+'RQ'              produit du débit par le rapport R (fonctionne aussi si on demande 'QR')
+'lambda'          liste des demi-longueurs d'onde successives
+"""
