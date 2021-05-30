@@ -17,8 +17,7 @@ def process_df(df, parameter1, parameter2, parameter3, fix_parameters):
         sub_df['lambda'] = sub_df['lambda'].apply(eval)
     if parameter2 == parameter3:
         return list(sub_df[parameter1]), list(sub_df[parameter2])
-    else:
-        return list(sub_df[parameter1]), list(sub_df[parameter2]), list(sub_df[parameter3])
+    return list(sub_df[parameter1]), list(sub_df[parameter2]), list(sub_df[parameter3])
 
 def compute(df, compute_choice):
     """Calcule les grandeurs d'intérêt choisies dans compute_choice"""
@@ -33,10 +32,15 @@ def compute(df, compute_choice):
         df['Embout'] = df.apply((lambda x: naming.tip_to_diameter(x['Dj'])), axis=1)
     if 'R' in compute_choice:
         df['R'] = df['Dc']/df['Dj']
-    if 'v_on' in compute_choice and 'Q_on' in df.columns:
-        df['v_on'] = 4*df['Q_on']/(np.pi*df['Dj']**2)
-    if 'v_off' in compute_choice and 'Q_off' in df.columns:
-        df['v_off'] = 4*df['Q_off']/(np.pi*df['Dj']**2)
+    if 'Q_on' in df.columns and 'Q_off' in df.columns:
+        if 'v_on' in compute_choice:
+            df['v_on'] = 4*df['Q_on']/(np.pi*df['Dj']**2)
+        if 'v_off' in compute_choice:
+            df['v_off'] = 4*df['Q_off']/(np.pi*df['Dj']**2)
+        if 'v_on_orth' in compute_choice:
+            df['v_on_orth'] = 4*df['Q_on']/(np.pi*df['Dj']**2)*np.sin(df['Angle']*np.pi/180)
+        if 'v_off_orth' in compute_choice:
+            df['v_off_orth'] = 4*df['Q_off']/(np.pi*df['Dj']**2)*np.sin(df['Angle']*np.pi/180)
     if 'v_lim' in compute_choice:
         df['v_lim'] = 4*df['Q_lim']/(np.pi*df['Dj']**2)
     if 'Angle' in df.columns and 'InvSinAngle' in compute_choice:
@@ -45,10 +49,6 @@ def compute(df, compute_choice):
         df['f_lim'] = 2.75*df['U']
     if 'v_orth_lim' in compute_choice:
         df['v_orth_lim'] = -2*np.pi*2.75*df['U']*df['Dc']*1e-3
-    if 'v_on_orth' in compute_choice and 'Q_on' in df.columns:
-        df['v_on_orth'] = 4*df['Q_on']/(np.pi*df['Dj']**2)*np.sin(df['Angle']*np.pi/180)
-    if 'v_off_orth' in compute_choice and 'Q_on' in df.columns:
-        df['v_off_orth'] = 4*df['Q_off']/(np.pi*df['Dj']**2)*np.sin(df['Angle']*np.pi/180)
     if 'v' in compute_choice and 'Q' in df.columns:
         df['v'] = 4*df['Q']/(np.pi*df['Dj']**2)
     if 'RQ' in compute_choice:
@@ -132,7 +132,7 @@ def lambdas(df, parameter, fix_parameters, n, reglin = False):
         
     plt.xlabel(naming.labelling(parameter))
     plt.ylabel("Distance selon l'axe z (cm)")
-    plt.legend(loc = 'upper left', ncol = 4)
+    plt.legend(loc = 'upper left', ncol = n)
     plt.title("Évolution du pas de l'hélice" + naming.give_title(FileName, fix_parameters))
     plt.show()
     print('\n Dataframe final \n', df)
@@ -168,11 +168,11 @@ if __name__ == "__main__" :
     ### OU ###
 
     ### Mode manuel :
-    # 1) Choisir le fichier .csv à exploiter (changer la valeur de 'FileName')
+    # 1) Choisir le fichier .csv à exploiter (changer la valeur de 'FileName').
     FileName = "lambdas.csv"
 
-    # 2) Étape facultative : définir les paramètres à fixer
-    # sous la forme "fix_parameters = {'paramètre1':valeur1, 'paramètre2':valeur2, ...}"
+    # 2) Étape facultative : définir les paramètres à fixer.
+    # sous la forme "fix_parameters = {'paramètre1':valeur1, 'paramètre2':valeur2, ...}".
     fix_parameters = {'Angle':33.5} # Exemple : fix_parameters = {'Angle':33.5, 'Dc':8, 'Embout':'N'}
 
     # 3) Définir quelles grandeurs tracer en fonction de quel paramètre.
@@ -186,7 +186,7 @@ if __name__ == "__main__" :
     n = 4
     reglin = True
 
-    # 5) Exécuter le programme
+    # 5) Exécuter le programme.
 #########################################################################################################
 
 
@@ -205,19 +205,18 @@ if __name__ == "__main__" :
 
 """ Catalogue
 Fichiers :
-              Nom                                     Paramètres disponibles
-              "verre_eau_statique.csv"                'Embout', 'Dj, 'Dc', 'R', 'Q_off', 'Q_on', 'v_off', 'v_on'
-              "plastique_eau_statique.csv"            'Embout', 'Dj, 'Dc', 'R', 'Q_off', 'Q_on', 'v_off', 'v_on'
-              "verre_eausavonneuse_statique.csv"      'Embout', 'Dj, 'Dc', 'R', 'Q_off', 'Q_on', 'v_off', 'v_on'
-              "angle.csv"                             'Embout', 'Dj, 'Dc', 'R', 'Q_off', 'Q_on', 'v_off', 'v_on', 'Angle', 'InvSinAngle'
-              "moteur.csv"                            'U', 'f_mes'
-              "rotationdestruction.csv"               'Embout', 'Dj, 'Dc', 'R', 'Q_on', 'v_on', 'U', 'f_lim', 'v_orth_lim'
-              "verre_eau_statique_angle.csv"          'Embout', 'Dj, 'Dc', 'R', 'Q_off', 'Q_on', 'v_off', 'v_on', 'v_off_orth', 'v_on_orth'
-              "lambdas.csv"                           'Angle', 'Dj', 'Dc', 'Q', 'lambda', 'v', 'RQ'
+    Nom                                     Paramètres disponibles
+    "verre_eau_statique.csv"                'Embout', 'Dj, 'Dc', 'R', 'Q_off', 'Q_on', 'v_off', 'v_on'
+    "plastique_eau_statique.csv"            'Embout', 'Dj, 'Dc', 'R', 'Q_off', 'Q_on', 'v_off', 'v_on'
+    "verre_eausavonneuse_statique.csv"      'Embout', 'Dj, 'Dc', 'R', 'Q_off', 'Q_on', 'v_off', 'v_on'
+    "angle.csv"                             'Embout', 'Dj, 'Dc', 'R', 'Q_off', 'Q_on', 'v_off', 'v_on', 'Angle', 'InvSinAngle'
+    "moteur.csv"                            'U', 'f_mes'
+    "rotationdestruction.csv"               'Embout', 'Dj, 'Dc', 'R', 'Q_on', 'v_on', 'U', 'f_lim', 'v_orth_lim'
+    "verre_eau_statique_angle.csv"          'Embout', 'Dj, 'Dc', 'R', 'Q_off', 'Q_on', 'v_off', 'v_on', 'v_off_orth', 'v_on_orth'
+    "lambdas.csv"                           'Angle', 'Dj', 'Dc', 'Q', 'lambda', 'v', 'RQ'
 Note : '_' est un séparateur d'informations dans le nom des fichiers
 
 Paramètres :
-Il s'agit de l'ensembles des paramètres contenus dans les fichiers CSV et des paramètres calculés.
 'Dc'              diamètre du cylindre en mm, parmi : 4, 6, 8, 10 en verre, 5, 8, 10 en plastique
 'Embout'          type d'embout, parmi : 'P' (violet), 'R' (rose), 'V' (vert), 'N' (noir), 'O' (olive)
 'Dj'              diamètre du jet. "tip_to_diameter" s'occupe de faire la correspondance avec 'Embout' automatiquement.
