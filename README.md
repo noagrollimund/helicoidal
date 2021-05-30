@@ -14,3 +14,8 @@ You will also need to install Google Chrome in order to launch the graphic user 
 2) Launch `python3 tube_detection.py`. This will automatically calculate a first approximation of the lambas.
 3) Launch `python3 app.py` and use the graphic user interface to modify the automatic detection of the tube and water. 
 4) Once satisfied with your measures, launch `python3 json_to_dataframe.py` to create the `lambas.csv` file
+
+## How to plot data from `.csv` files with `DataAnalysis.py`
+
+1) Indicate your parameters in `DataAnalysis.py` at the end of the code (everything is explained in the commented zone).
+2) Launch `python3 DataAnalysis.py`.
