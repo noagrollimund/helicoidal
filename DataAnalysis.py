@@ -173,14 +173,14 @@ if __name__ == "__main__" :
 
     # 2) Étape facultative : définir les paramètres à fixer
     # sous la forme "fix_parameters = {'paramètre1':valeur1, 'paramètre2':valeur2, ...}"
-    fix_parameters = {'Angle':33.5, 'Embout': 'N'} # Exemple : fix_parameters = {'Angle':33.5, 'Dc':8, 'Embout':'N'}
+    fix_parameters = {'Angle':33.5} # Exemple : fix_parameters = {'Angle':33.5, 'Dc':8, 'Embout':'N'}
 
     # 3) Définir quelles grandeurs tracer en fonction de quel paramètre.
     # Notes :   - Pour les lambdas, la grandeur est forcément 'lambda' et n'a pas besoin d'être définie.
     #           - Si on ne veut tracer qu'une seule grandeur, mettre deux fois la même.
     paramètre = 'RQ'
-    grandeur1 = 'v_on'
-    grandeur2 = 'v_off'
+    grandeur1 = ''
+    grandeur2 = ''
 
     # 4) Pour 'lambdas.csv' seulement : préciser le nombre n de longueurs d'onde à tracer et si on veut une régression linéaire.
     n = 4
@@ -192,7 +192,7 @@ if __name__ == "__main__" :
 
 #########################################################################################################
     ### Ne pas modifier ###
-    df  = pd.read_csv(FileName, sep = ",")
+    df  = pd.read_csv("CSV_data/" + FileName, sep = ",")
     if AutoMode:
         auto(df)
     else:
