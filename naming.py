@@ -14,7 +14,7 @@ def tip_to_diameter(tip_or_diam):
         print("\n /!\ : diamètre d'embout inconnu dans le dataframe ! \n")
     return None
 
-def labelling(parameter):
+def label(parameter):
     """Donne des étiquettes aux courbes"""
     label = parameter
     labels = {}
@@ -41,7 +41,7 @@ def labelling(parameter):
         label = labels[parameter]
     return label
 
-def give_title(FileName, fix_parameters):
+def title(FileName, fix_parameters):
     """Donne un titre au graphe en fonction du ou des paramètre(s) fixés et du nom du fichier"""
     title = ''
     words = FileName[:-4].split("_")

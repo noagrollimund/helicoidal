@@ -20,11 +20,17 @@ def process_df(df, parameter1, parameter2, parameter3, fix_parameters):
     return list(sub_df[parameter1]), list(sub_df[parameter2]), list(sub_df[parameter3])
 
 def compute(df, compute_choice):
-    """Calcule les grandeurs d'intérêt choisies dans compute_choice"""
+    """Calcule les grandeurs d'intérêt choisies dans compute_choice et les range dans le dataframe"""
     catalogue = ['Dj', 'Embout', 'R', 'v_on', 'v_off', 'v_lim', 'InvSinAngle', 'f_lim', 'v_orth_lim','v_on_orth', 'v_off_orth', 'v', 'RQ', 'QR']
     for choice in compute_choice:
         if choice not in catalogue:
             print('\n /!\ : ' + choice + ' est à calculer, mais cette grandeur ne fait pas partie du catalogue !\n')
+            return None
+    splitted_choices = [list(choice) for choice in compute_choice]
+    first_letter = [word[0] for word in splitted_choices]
+    tip_needed = 'R' in first_letter or 'v' in first_letter
+    if 'Dj' not in df.columns and 'Embout' not in df.columns and tip_needed:
+            print("\n /!\ : ni 'Embout' ni 'Dj' ne sont dans le dataframe ! \n")
             return None
     if 'Embout' in df.columns:
         df['Dj'] = df.apply((lambda x: naming.tip_to_diameter(x['Embout'])), axis=1)
@@ -76,12 +82,12 @@ def coiling(df, parameter, value1, value2, fix_parameters):
         y2 = zeros_exterminator(y2)
     y1 = zeros_exterminator(y1)
 
-    plt.plot(x, y1, '.', label = naming.labelling(value1))
+    plt.plot(x, y1, '.', label = naming.label(value1))
     if value2 != value1:
-        plt.plot(x, y2, '.', label = naming.labelling(value2))
-    plt.xlabel(naming.labelling(parameter))
+        plt.plot(x, y2, '.', label = naming.label(value2))
+    plt.xlabel(naming.label(parameter))
     plt.legend()
-    plt.title(naming.give_title(FileName, fix_parameters))
+    plt.title(naming.title(FileName, fix_parameters))
     plt.show()
     print('\n Dataframe final \n', df)
 
@@ -130,10 +136,10 @@ def lambdas(df, parameter, fix_parameters, n, reglin = False):
             reglins.append(list(z*slopes[i]+intercepts[i]))
             plt.plot(z, reglins[i])
         
-    plt.xlabel(naming.labelling(parameter))
+    plt.xlabel(naming.label(parameter))
     plt.ylabel("Distance selon l'axe z (cm)")
     plt.legend(loc = 'upper left', ncol = n)
-    plt.title("Évolution du pas de l'hélice" + naming.give_title(FileName, fix_parameters))
+    plt.title("Évolution du pas de l'hélice" + naming.title(FileName, fix_parameters))
     plt.show()
     print('\n Dataframe final \n', df)
 
@@ -183,8 +189,8 @@ if __name__ == "__main__" :
     grandeur2 = ''
 
     # 4) Pour 'lambdas.csv' seulement : préciser le nombre n de longueurs d'onde à tracer et si on veut une régression linéaire.
-    n = 4
-    reglin = True
+    n = 6
+    reglin = False
 
     # 5) Exécuter le programme.
 #########################################################################################################
@@ -216,22 +222,25 @@ Fichiers :
     "lambdas.csv"                           'Angle', 'Dj', 'Dc', 'Q', 'lambda', 'v', 'RQ'
 Note : '_' est un séparateur d'informations dans le nom des fichiers
 
-Paramètres :
+Paramètres intrinsèques :
 'Dc'              diamètre du cylindre en mm, parmi : 4, 6, 8, 10 en verre, 5, 8, 10 en plastique
 'Embout'          type d'embout, parmi : 'P' (violet), 'R' (rose), 'V' (vert), 'N' (noir), 'O' (olive)
 'Dj'              diamètre du jet. "tip_to_diameter" s'occupe de faire la correspondance avec 'Embout' automatiquement.
-'R'               rapport Dc/Dj
 'Q_on', 'Q_off'   débits d'accrochage et de décrochage en mL/s
-'v_on', 'v_off'   vitesses d'accrochage et de décrochage en m/s
 'Angle'           angle en degrés entre le jet et le cylindre
-'InvSinAngle'     inverse du sinus de l'angle entre le jet et le cylindre
 'U'               tension en volt aux bornes du moteur
 'f_mes'           fréquence de rotation du moteur mesurée pour étalonnage
+'lambda'          liste des demi-longueurs d'onde successives
+'Q'               débit du jet (pour les lambdas)
+
+Paramètres calculés :
+'R'               rapport Dc/Dj
+'v_on', 'v_off'   vitesses d'accrochage et de décrochage en m/s calculée à partir des débits
+'v_off_orth'      vitesse de décrochage en m/s projetée de manière orthoradiale
+'v_on_orth'       vitesse d'accrochage en m/s projetée de manière orthoradiale
+'InvSinAngle'     inverse du sinus de l'angle entre le jet et le cylindre
 'f_lim'           fréquence de rotation du moteur calculée à partir de sa tension d'alimentation
 'v_orth_lim'      vitesse orthoradiale limite d'un point en rotation sur le cylindre en m/s
-'v_off_orth'      vitesse de décrochage projetée de manière orthoradiale
-'v_on_orth'       vitesse d'accrochage projetée de manière orthoradiale
 'v'               vitesse du jet (pour les lambdas)
-'RQ'              produit du débit par le rapport R (fonctionne aussi si on demande 'QR')
-'lambda'          liste des demi-longueurs d'onde successives
+'RQ'              produit du débit Q par le rapport R (fonctionne aussi si on demande 'QR')
 """
