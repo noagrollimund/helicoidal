@@ -2,12 +2,13 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.linear_model import LinearRegression
+from sklearn.linear_model import LogisticRegression
 import naming
 
 def process_df(df, parameter1, parameter2, parameter3, fix_parameters):
     """Extrait les colonnes d'intérêt sous forme de listes, à partir du dataframe, des paramètres fixes et variables"""
     if parameter1 not in df.columns or parameter2 not in df.columns or parameter3 not in df.columns:
-        print("\n /!\ : un des paramètres (" + parameter1 + ', ' + parameter2 + ', ' + parameter3 + ") n'est pas dans le dataframe ! \n")
+        print("\n\n /!\ DataAnalysis Fatal Error : un paramètre ou une grandeur (" + parameter1 + ', ' + parameter2 + ', ' + parameter3 + ") n'est pas dans le dataframe ! \n\n")
         return None
     sub_df = df
     for key in fix_parameters.keys():
@@ -24,13 +25,12 @@ def compute(df, compute_choice):
     catalogue = ['Dj', 'Embout', 'R', 'v_on', 'v_off', 'v_lim', 'InvSinAngle', 'f_lim', 'v_orth_lim','v_on_orth', 'v_off_orth', 'v', 'RQ', 'QR']
     for choice in compute_choice:
         if choice not in catalogue:
-            print('\n /!\ : ' + choice + ' est à calculer, mais cette grandeur ne fait pas partie du catalogue !\n')
+            print('\n\n /!\ DataAnalysis Fatal Error : ' + choice + ' est à calculer, mais cette grandeur ne fait pas partie du catalogue !\n\n')
             return None
-    splitted_choices = [list(choice) for choice in compute_choice]
-    first_letter = [word[0] for word in splitted_choices]
-    tip_needed = 'R' in first_letter or 'v' in first_letter
+    splitted_choices = [letter for choice in compute_choice for letter in choice]
+    tip_needed = 'R' in splitted_choices or 'v' in splitted_choices
     if 'Dj' not in df.columns and 'Embout' not in df.columns and tip_needed:
-            print("\n /!\ : ni 'Embout' ni 'Dj' ne sont dans le dataframe ! \n")
+            print("\n\n /!\ DataAnalysis Fatal Error : ni 'Embout' ni 'Dj' ne sont dans le dataframe ! \n\n")
             return None
     if 'Embout' in df.columns:
         df['Dj'] = df.apply((lambda x: naming.tip_to_diameter(x['Embout'])), axis=1)
@@ -67,29 +67,13 @@ def zeros_exterminator(x):
     """Elimine les zéros de la liste x"""
     return [item if abs(item) > 1e-3 else None for item in x]
 
-def coiling(df, parameter, value1, value2, fix_parameters):
-    """Trace 2 grandeurs en fonction du paramètre chosisi"""
-    if parameter == '' or value1 == '' or value2 == '':
-        print("\n /!\ : Un paramètre ou une grandeur n'a pas été choisi ! \n")
-        return None
-    parameters = [parameter, value1, value2] + list(fix_parameters.keys())
-    compute_choice = [parameter for parameter in parameters if parameter not in df.columns]
-    df = compute(df, compute_choice)
-    if value1 == value2:
-        x, y1 = process_df(df, parameter, value1, value2, fix_parameters)
-    else:
-        x, y1, y2 = process_df(df, parameter, value1, value2, fix_parameters)
-        y2 = zeros_exterminator(y2)
-    y1 = zeros_exterminator(y1)
-
-    plt.plot(x, y1, '.', label = naming.label(value1))
-    if value2 != value1:
-        plt.plot(x, y2, '.', label = naming.label(value2))
-    plt.xlabel(naming.label(parameter))
-    plt.legend()
-    plt.title(naming.title(FileName, fix_parameters))
-    plt.show()
-    print('\n Dataframe final \n', df)
+def logistic_regression(X,y):
+    clf = LogisticRegression(random_state=0).fit(X, y)
+    coeff = clf.coef_
+    intercept = clf.intercept_
+    slope = - coeff[:,0]/coeff[:,1]
+    intercept = -intercept/coeff[:,1]
+    return slope, intercept
 
 def linear_regression(x,y):
     """Calcule la régression linéaire à partir de la donnée de x et y"""
@@ -102,6 +86,40 @@ def linear_regression(x,y):
     model = LinearRegression().fit(X, Y)
     return model.coef_, model.intercept_
 
+def coiling(df, parameter, value1, value2, fix_parameters, reglog = False, disp_df = False):
+    """Trace 2 grandeurs en fonction du paramètre chosisi"""
+    if parameter == '' or value1 == '' or value2 == '':
+        print("\n\n /!\ DataAnalysis Fatal Error : Un paramètre ou une grandeur n'a pas été choisi ! \n\n")
+        return None
+    parameters = [parameter, value1, value2] + list(fix_parameters.keys())
+    compute_choice = [parameter for parameter in parameters if parameter not in df.columns]
+    df = compute(df, compute_choice)
+    if value1 == value2:
+        x, y1 = process_df(df, parameter, value1, value2, fix_parameters)
+    else:
+        x, y1, y2 = process_df(df, parameter, value1, value2, fix_parameters)
+        y2 = zeros_exterminator(y2)
+    y1 = zeros_exterminator(y1)
+
+    if reglog:
+        X = (np.array([[x[i], y1[i]] for i in range(len(x)) if y1[i] != None] + [[x[i], y2[i]] for i in range(len(x)) if y2[i] != None]))
+        y = np.array([0 for item in y1 if item != None] + [1 for item in y2 if item != None])
+        slope, intercept = logistic_regression(X,y)
+        print('\n Pente : ', slope, "\n Ordonnée à l'origine : ", intercept, '\n')
+        z = np.linspace(min(x), max(x))
+        reglog = z*slope+intercept
+        plt.plot(z, reglog, 'k')
+
+    plt.plot(x, y1, '.', label = naming.label(value1))
+    if value2 != value1:
+        plt.plot(x, y2, '.', label = naming.label(value2))
+    plt.xlabel(naming.label(parameter))
+    plt.legend()
+    plt.title(naming.title(FileName, fix_parameters))
+    plt.show()
+    if disp_df:
+        print('\n\n Dataframe final \n', df)
+
 def lambda_organizer(y, n):
     """Réarrange les listes de listes de lambdas"""
     all_lambdas = [[] for k in range(n)]
@@ -113,10 +131,10 @@ def lambda_organizer(y, n):
                 all_lambdas[i].append(None)
     return all_lambdas
 
-def lambdas(df, parameter, fix_parameters, n, reglin = False):
+def lambdas(df, parameter, fix_parameters, n, reglin = False, disp_df = False):
     """Trace les lambdas en fonction de 'parameter', en fixant les paramètres mis dans 'fix_parameters'"""
     if parameter == '':
-        print("\n /!\ : Aucun paramètre n'a été choisi ! \n")
+        print("\n\n /!\ DataAnalysis Fatal Error : Aucun paramètre n'a été choisi ! \n\n")
         return None
     parameters = [parameter, 'lambda'] + list(fix_parameters.keys())
     compute_choice = [parameter for parameter in parameters if parameter not in df.columns]
@@ -133,6 +151,7 @@ def lambdas(df, parameter, fix_parameters, n, reglin = False):
         slopes, intercepts, reglins = [[] for k in range(n)], [[] for k in range(n)], []
         for i in range(n):
             slopes[i], intercepts[i] = linear_regression(x, lambdas[i])
+            print('\n Lambda' + str(i) + '\n Pente : ', slopes[i], "\n Ordonnée à l'origine : ", intercepts[i], '\n')
             reglins.append(list(z*slopes[i]+intercepts[i]))
             plt.plot(z, reglins[i])
         
@@ -141,7 +160,8 @@ def lambdas(df, parameter, fix_parameters, n, reglin = False):
     plt.legend(loc = 'upper left', ncol = n)
     plt.title("Évolution du pas de l'hélice" + naming.title(FileName, fix_parameters))
     plt.show()
-    print('\n Dataframe final \n', df)
+    if disp_df:
+        print('\n\n Dataframe final \n', df)
 
 def auto(df):
     """S'occupe de tout, avec des paramètres par défaut"""
@@ -159,7 +179,6 @@ def auto(df):
         if FileName == 'verre_eau_statique_angle.csv':
             value1, value2 = 'v_off_orth', 'v_on_orth'
         coiling(df, parameter, value1, value2, fix_parameters)
-
 
 
 ########################################################################################################
@@ -188,11 +207,15 @@ if __name__ == "__main__" :
     grandeur1 = ''
     grandeur2 = ''
 
-    # 4) Pour 'lambdas.csv' seulement : préciser le nombre n de longueurs d'onde à tracer et si on veut une régression linéaire.
-    n = 6
-    reglin = False
+    # 4) Préciser le nombre n de longueurs d'onde à tracer pour 'lambdas.csv',
+    # si on veut une régression (linéaire pour 'lambdas.csv', logistique pour les autres)
+    # et si on veut afficher le dataframe à la fin du traitement.
+    n = 4
+    regression = True
+    disp_df = False
 
     # 5) Exécuter le programme.
+    
 #########################################################################################################
 
 
@@ -203,9 +226,9 @@ if __name__ == "__main__" :
         auto(df)
     else:
         if FileName == 'lambdas.csv':
-            lambdas(df, paramètre, fix_parameters, n, reglin)
+            lambdas(df, paramètre, fix_parameters, n, regression, disp_df)
         else:
-            coiling(df, paramètre, grandeur1, grandeur2, fix_parameters)
+            coiling(df, paramètre, grandeur1, grandeur2, fix_parameters, regression, disp_df)
 #########################################################################################################
 
 
@@ -223,24 +246,23 @@ Fichiers :
 Note : '_' est un séparateur d'informations dans le nom des fichiers
 
 Paramètres intrinsèques :
-'Dc'              diamètre du cylindre en mm, parmi : 4, 6, 8, 10 en verre, 5, 8, 10 en plastique
-'Embout'          type d'embout, parmi : 'P' (violet), 'R' (rose), 'V' (vert), 'N' (noir), 'O' (olive)
-'Dj'              diamètre du jet. "tip_to_diameter" s'occupe de faire la correspondance avec 'Embout' automatiquement.
-'Q_on', 'Q_off'   débits d'accrochage et de décrochage en mL/s
-'Angle'           angle en degrés entre le jet et le cylindre
-'U'               tension en volt aux bornes du moteur
-'f_mes'           fréquence de rotation du moteur mesurée pour étalonnage
-'lambda'          liste des demi-longueurs d'onde successives
-'Q'               débit du jet (pour les lambdas)
-
+    'Dc'              diamètre du cylindre en mm, parmi : 4, 6, 8, 10 en verre, 5, 8, 10 en plastique
+    'Embout'          type d'embout, parmi : 'P' (violet), 'R' (rose), 'V' (vert), 'N' (noir), 'O' (olive)
+    'Dj'              diamètre du jet. "tip_to_diameter" s'occupe de faire la correspondance avec 'Embout' automatiquement.
+    'Q_on', 'Q_off'   débits d'accrochage et de décrochage en mL/s
+    'Angle'           angle en degrés entre le jet et le cylindre
+    'U'               tension en volt aux bornes du moteur
+    'f_mes'           fréquence de rotation du moteur mesurée pour étalonnage
+    'lambda'          liste des demi-longueurs d'onde successives
+    'Q'               débit du jet (pour les lambdas)
 Paramètres calculés :
-'R'               rapport Dc/Dj
-'v_on', 'v_off'   vitesses d'accrochage et de décrochage en m/s calculée à partir des débits
-'v_off_orth'      vitesse de décrochage en m/s projetée de manière orthoradiale
-'v_on_orth'       vitesse d'accrochage en m/s projetée de manière orthoradiale
-'InvSinAngle'     inverse du sinus de l'angle entre le jet et le cylindre
-'f_lim'           fréquence de rotation du moteur calculée à partir de sa tension d'alimentation
-'v_orth_lim'      vitesse orthoradiale limite d'un point en rotation sur le cylindre en m/s
-'v'               vitesse du jet (pour les lambdas)
-'RQ'              produit du débit Q par le rapport R (fonctionne aussi si on demande 'QR')
+    'R'               rapport Dc/Dj
+    'v_on', 'v_off'   vitesses d'accrochage et de décrochage en m/s calculée à partir des débits
+    'v_off_orth'      vitesse de décrochage en m/s projetée de manière orthoradiale
+    'v_on_orth'       vitesse d'accrochage en m/s projetée de manière orthoradiale
+    'InvSinAngle'     inverse du sinus de l'angle entre le jet et le cylindre
+    'f_lim'           fréquence de rotation du moteur calculée à partir de sa tension d'alimentation
+    'v_orth_lim'      vitesse orthoradiale limite d'un point en rotation sur le cylindre en m/s
+    'v'               vitesse du jet (pour les lambdas)
+    'RQ'              produit du débit Q par le rapport R (fonctionne aussi si on demande 'QR')
 """
